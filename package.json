@@ -1,0 +1,25 @@
+{
+  "name": "compiler-project",
+  "version": "1.0.0",
+  "description": "A simple c++ code editor with CodeMirror",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "compiler",
+    "project",
+    "cpp",
+    "codemirror"
+  ],
+  "author": "yashu pawar",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "compilex": "^0.7.4",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "nodemon": "^3.1.10"
+  }
+}
