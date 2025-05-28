@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sigma Playground - Full Sigma Language Interpreter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    font-family: 'Fira Code', monospace, monospace;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    padding: 20px;
+    text-align: center;
+    background-color: rgba(0,0,0,0.3);
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  main {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    flex-wrap: nowrap;
+  }
+  section {
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  #editor {
+    flex: 2;
+    max-width: 40%;
+  }
+  #userInput {
+    flex: 1.2;
+    max-width: 25%;
+  }
+  #output {
+    flex: 1.8;
+    max-width: 35%;
+    overflow: hidden;
+    position: relative;
+  }
+  #documentation {
+    background: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #ddd;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  header section-header {
+    padding: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid #9993;
+  }
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    resize: none;
+    outline: none;
+    color: #eee;
+    font-size: 1rem;
+    padding: 15px;
+    border-radius: 0 0 10px 10px;
+    font-family: 'Fira Code', monospace;
+    line-height: 1.4;
+  }
+  #editor header, #userInput header, #output header {
+    padding: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid #9993;
+  }
+  #console {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: #f0f0f0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  button#runButton {
+    background: #764ba2;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin: 10px 20px 20px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.3s ease;
+    align-self: center;
+    box-shadow: 0 4px 10px rgba(118, 75, 162, 0.7);
+    user-select: none;
+  }
+  button#runButton:hover {
+    background: #8775bb;
+  }
+  footer {
+    text-align: center;
+    color: #bbb;
+    font-size: 0.9rem;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.3);
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #764ba2aa;
+    border-radius: 4px;
+  }
+  label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<header>Sigma Language Playground</header>
+<main>
+  <section id="editor">
+    <header>Code Editor</header>
+    <textarea spellcheck="false" id="codeInput" placeholder="Write your Sigma code here..."></textarea>
+    <button id="runButton">Run</button>
+  </section>
+  <section id="userInput">
+    <header>User Input</header>
+    <textarea spellcheck="false" id="inputArea" placeholder="Write input lines here, one per input command..."></textarea>
+  </section>
+  <section id="output">
+    <header>Output Console</header>
+    <pre id="console"></pre>
+    <div id="documentation">
+      <strong>Sigma Language Documentation:</strong>
+      <ul>
+        <li><code>print &lt;text&gt;</code> - Prints the given text to the output console.</li>
+        <li><code>add &lt;num1&gt; &lt;num2&gt;</code> - Adds two numbers and prints the result.</li>
+        <li><code>sub &lt;num1&gt; &lt;num2&gt;</code> - Subtracts second number from first and prints the result.</li>
+        <li><code>mul &lt;num1&gt; &lt;num2&gt;</code> - Multiplies two numbers and prints the result.</li>
+        <li><code>div &lt;num1&gt; &lt;num2&gt;</code> - Divides first number by second and prints the result.</li>
+        <li><code>mod &lt;num1&gt; &lt;num2&gt;</code> - Prints the modulus (remainder) of first number divided by second.</li>
+        <li><code>noop</code> - No operation, does nothing.</li>
+        <li><code>input</code> - Reads one line from the User Input area and prints it.</li>
+        <li>Conditionals:
+          <ul>
+            <li><code>if_eq &lt;val1&gt; &lt;val2&gt;</code> - Execute following commands if val1 equals val2.</li>
+            <li><code>if_gt &lt;val1&gt; &lt;val2&gt;</code> - Execute following commands if val1 greater than val2.</li>
+            <li><code>if_lt &lt;val1&gt; &lt;val2&gt;</code> - Execute following commands if val1 less than val2.</li>
+            <li><code>else</code> - Else branch for conditional.</li>
+            <li><code>endif</code> - Ends a conditional block.</li>
+          </ul>
+        </li>
+      </ul>
+      <p><em>Notes:</em> Write multiple user inputs separated by new lines in the User Input area. Each <code>input</code> command consumes one line from user inputs in sequence. Conditionals can be nested.</p>
+    </div>
+  </section>
+</main>
+<footer>Built with ❤️ for Sigma Language by BLACKBOXAI</footer>
+<script>
+  (function(){
+    const codeInput = document.getElementById("codeInput");
+    const consoleOutput = document.getElementById("console");
+    const runButton = document.getElementById("runButton");
+    const inputArea = document.getElementById("inputArea");
+
+    function appendToConsole(text, type = "output") {
+      const span = document.createElement("span");
+      if(type === "error") {
+        span.style.color = "#ff6b6b";
+        span.textContent = "Error: " + text;
+      } else {
+        span.style.color = "#aaf7ff";
+        span.textContent = text;
+      }
+      consoleOutput.appendChild(span);
+      consoleOutput.appendChild(document.createElement("br"));
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    function clearConsole() {
+      consoleOutput.textContent = "";
+    }
+
+    function isNumber(str) {
+      return !isNaN(str) && str.trim() !== "";
+    }
+
+    function compareVals(val1, val2, op) {
+      // If val1 or val2 is the string "input", replace with last read input value for comparison
+      // We'll track the last input value to support this behavior
+      val1 = val1.toLowerCase() === "input" && lastInputValue !== undefined ? lastInputValue : val1;
+      val2 = val2.toLowerCase() === "input" && lastInputValue !== undefined ? lastInputValue : val2;
+
+      const num1 = Number(val1);
+      const num2 = Number(val2);
+      const bothNumbers = isNumber(val1) && isNumber(val2);
+
+      switch(op) {
+        case "eq":
+          if(bothNumbers) return num1 === num2;
+          return val1 === val2;
+        case "gt":
+          if(!bothNumbers) return false;
+          return num1 > num2;
+        case "lt":
+          if(!bothNumbers) return false;
+          return num1 < num2;
+        default:
+          return false;
+      }
+    }
+
+    let lastInputValue = undefined;
+
+    function interpretSigmaCode(source, userInput) {
+      clearConsole();
+      const lines = source.split("\n");
+      const inputLines = userInput.split("\n");
+      let inputPointer = 0;
+      lastInputValue = undefined;
+
+      const condStack = [];
+
+      function shouldExecute() {
+        for(let i=0; i < condStack.length; i++) {
+          if(!condStack[i].executing) return false;
+        }
+        return true;
+      }
+
+      for(let i=0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if(line === "" || line.startsWith("//")) {
+          continue;
+        }
+        const parts = line.split(" ");
+        const command = parts[0].toLowerCase();
+
+        try {
+          if(command === "if_eq" || command === "if_gt" || command === "if_lt") {
+            if(parts.length < 3) throw `${command} expects 2 arguments`;
+            const val1 = parts[1];
+            const val2 = parts[2];
+            const condMet = compareVals(val1, val2, command.slice(3));
+            condStack.push({conditionMet: condMet, elseEncountered: false, executing: shouldExecute() && condMet});
+            continue;
+          }
+
+          if(command === "else") {
+            if(condStack.length === 0) throw "else without matching if";
+            const top = condStack[condStack.length-1];
+            if(top.elseEncountered) throw "multiple else in same conditional";
+            top.elseEncountered = true;
+            top.executing = shouldExecute() && !top.conditionMet;
+            continue;
+          }
+
+          if(command === "endif") {
+            if(condStack.length === 0) throw "endif without matching if";
+            condStack.pop();
+            continue;
+          }
+
+          if(!shouldExecute()) {
+            continue;
+          }
+
+          switch(command) {
+            case "print":
+              appendToConsole(parts.slice(1).join(" "));
+              break;
+            case "add":
+            case "sub":
+            case "mul":
+            case "div":
+            case "mod":
+              if(parts.length < 3) throw `${command} expects 2 arguments`;
+              let op1 = parts[1].toLowerCase() === "input" && lastInputValue !== undefined ? lastInputValue : parts[1];
+              let op2 = parts[2].toLowerCase() === "input" && lastInputValue !== undefined ? lastInputValue : parts[2];
+              const n1 = Number(op1);
+              const n2 = Number(op2);
+              if(isNaN(n1) || isNaN(n2)) throw `${command} arguments must be numbers`;
+              let res;
+              switch(command) {
+                case "add":
+                  res = n1 + n2;
+                  break;
+                case "sub":
+                  res = n1 - n2;
+                  break;
+                case "mul":
+                  res = n1 * n2;
+                  break;
+                case "div":
+                  if(n2 === 0) throw "division by zero";
+                  res = n1 / n2;
+                  break;
+                case "mod":
+                  if(n2 === 0) throw "modulus by zero";
+                  res = n1 % n2;
+                  break;
+              }
+              appendToConsole(res.toString());
+              break;
+            case "noop":
+              break;
+            case "input":
+              if(inputPointer >= inputLines.length) {
+                throw "No more user input lines available for input command";
+              }
+              lastInputValue = inputLines[inputPointer++].trim();
+              appendToConsole(lastInputValue);
+              break;
+            default:
+              throw `Unknown command "${command}" at line ${i+1}`;
+          }
+        } catch(err) {
+          appendToConsole(err.toString(), "error");
+        }
+      }
+      if(condStack.length > 0) {
+        appendToConsole("Warning: Unclosed conditional block(s) detected", "error");
+      }
+    }
+
+    runButton.addEventListener("click", () => {
+      interpretSigmaCode(codeInput.value, inputArea.value);
+    });
+
+    const sampleCode = `// Sigma program using manual input and conditionals with 'input' variable
+print Please enter your age:
+input
+
+if_lt input 18
+  print You are younger than 18
+endif
+
+if_eq input 18
+  print Exactly 18 years old
+endif
+
+if_gt input 17
+  print You are older than 17
+endif
+
+print Done with conditionals.
+`;
+
+    const sampleInput = `18`;
+
+    codeInput.value = sampleCode;
+    inputArea.value = sampleInput;
+    interpretSigmaCode(sampleCode, sampleInput);
+  })();
+</script>
+</body>
+</html>
