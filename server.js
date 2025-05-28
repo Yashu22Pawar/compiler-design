@@ -1,90 +1,81 @@
-const express = require("express");
-const app = express();
-const bodyParser = require("body-parser");
-const compiler = require("compilex");
-const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
+const express = require('express');
+const bodyParser = require('body-parser');
+const compiler = require('compilex');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
-// Create temp directory if not exists
 const tempDir = path.join(__dirname, "temp");
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-
-// Initialize compiler
 compiler.init({ stats: true, tempDir });
+
+const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
 app.use(express.static(__dirname));
 
-// Serve index page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// Compile API
-app.post("/compile", (req, res) => {
+app.post('/compile', (req, res) => {
   const { code, input, lang } = req.body;
 
-  const envData = {
-    OS: process.platform === "win32" ? "windows" : "linux",
-    options: { timeout: 10000 },
-  };
-
   if (!code || !lang) {
-    return res.status(400).json({ error: "Missing code or language." });
+    return res.status(400).json({ error: "Missing code or language" });
   }
+
+  const envData = {
+    OS: process.platform === 'win32' ? 'windows' : 'linux',
+    options: { timeout: 10000 }
+  };
 
   let responded = false;
 
-  function safeHandle(data) {
+  const handleResult = (data) => {
     if (responded) return;
     responded = true;
-    handleCompilationResult(data, res);
-  }
+    res.json({ 
+      output: data.output || "No output",
+      error: data.error 
+    });
+  };
 
   try {
-    if (lang === "Cpp") {
-      const cppEnv = { ...envData, cmd: "g++" };
-      if (input && input.trim() !== "") {
-        compiler.compileCPPWithInput(cppEnv, code, input, safeHandle);
-      } else {
-        compiler.compileCPP(cppEnv, code, safeHandle);
-      }
-    } else if (lang === "Python") {
-      if (input && input.trim() !== "") {
-        compiler.compilePythonWithInput(envData, code, input, safeHandle);
-      } else {
-        compiler.compilePython(envData, code, safeHandle);
-      }
-    } else if (lang === "Java") {
-      if (!code.includes("public class Main")) {
-        return res.status(400).json({ error: "Please use 'Main' as the class name in your Java code." });
-      }
-      if (input && input.trim() !== "") {
-        compiler.compileJavaWithInput(envData, code, input, safeHandle);
-      } else {
-        compiler.compileJava(envData, code, safeHandle);
-      }
-    } else {
-      return res.status(400).json({ error: "Unsupported language" });
+    switch (lang) {
+      case 'Cpp':
+        const cppEnv = { ...envData, cmd: 'g++' };
+        input ? compiler.compileCPPWithInput(cppEnv, code, input, handleResult)
+              : compiler.compileCPP(cppEnv, code, handleResult);
+        break;
+      
+      case 'Python':
+        input ? compiler.compilePythonWithInput(envData, code, input, handleResult)
+              : compiler.compilePython(envData, code, handleResult);
+        break;
+      
+      case 'Java':
+        if (!code.includes('public class Main')) {
+          return res.status(400).json({ error: "Java code must contain 'public class Main'" });
+        }
+        input ? compiler.compileJavaWithInput(envData, code, input, handleResult)
+              : compiler.compileJava(envData, code, handleResult);
+        break;
+      
+      default:
+        return res.status(400).json({ error: "Unsupported language" });
     }
   } catch (e) {
-    return res.status(500).json({ error: "Internal error: " + e.message });
+    if (!responded) {
+      responded = true;
+      res.status(500).json({ error: e.message });
+    }
   }
 });
 
-// Response handler
-function handleCompilationResult(data, res) {
-  if (res.headersSent) return;
-  if (data.error) {
-    return res.status(500).json({ error: data.error.toString() });
-  }
-  return res.json({ output: data.output || "No output" });
-}
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
 
-// Start server
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
